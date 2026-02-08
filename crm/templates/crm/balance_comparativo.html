@@ -1,0 +1,396 @@
+{% extends "rutas/base.html" %}
+
+{% block title %}Comparativa de Años{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>📊 Comparativa Anual</h2>
+                <div>
+                    <a href="{% url 'crm:balance_mensual' %}" class="btn btn-outline-primary">
+                        Balance Mensual
+                    </a>
+                    <a href="{% url 'crm:balance_anual' %}" class="btn btn-outline-info">
+                        Balance Anual
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Años -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Seleccionar años a comparar (máximo 5)</label>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    {% for a in anios_disponibles %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="anios_sel" 
+                                               value="{{ a }}" id="anio_{{ a }}"
+                                               {% if a in anios_seleccionados %}checked{% endif %}>
+                                        <label class="form-check-label" for="anio_{{ a }}">
+                                            {{ a }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">Comparar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Comparativa -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Comparativa de Resultados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Concepto</th>
+                                    {% for anio_data in anios %}
+                                    <th class="text-end">{{ anio_data.anio }}</th>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}
+                                    <th class="text-end">Variación</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Ingresos -->
+                                <tr class="table-light">
+                                    <td class="fw-bold">INGRESOS</td>
+                                    {% for anio_data in anios %}
+                                    <td></td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Ingresos Totales (Bruto)</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">${{ anio_data.totales.ingresos_bruto|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length == 2 %}
+                                    <td class="text-end">
+                                        {% with var=comparativa|first %}
+                                        {% if var.1.crecimiento_ingresos_pct %}
+                                        <span class="badge {% if var.1.crecimiento_ingresos_pct > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ var.1.crecimiento_ingresos_pct|floatformat:1 }}%
+                                        </span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Ingresos Netos (sin IVA)</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">${{ anio_data.totales.ingresos_neto|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Número de Ventas</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">{{ anio_data.totales.num_ventas }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Kilos Vendidos</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">{{ anio_data.totales.kilos_vendidos|floatformat:0 }} kg</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+
+                                <!-- Costos -->
+                                <tr class="table-light">
+                                    <td class="fw-bold">COSTOS Y GASTOS</td>
+                                    {% for anio_data in anios %}
+                                    <td></td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Costo Mercadería Vendida</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end text-danger">-${{ anio_data.totales.cmv|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Gastos Operacionales (sin IVA)</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end text-danger">-${{ anio_data.totales.gastos_neto|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+
+                                <!-- Utilidades -->
+                                <tr class="table-light">
+                                    <td class="fw-bold">UTILIDADES</td>
+                                    {% for anio_data in anios %}
+                                    <td></td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Utilidad Bruta</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end text-success">${{ anio_data.totales.utilidad_bruta|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Utilidad Operacional</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">${{ anio_data.totales.utilidad_operacional|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr class="table-success fw-bold">
+                                    <td class="ps-4">Utilidad Neta</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end {% if anio_data.totales.utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ${{ anio_data.totales.utilidad_neta|floatformat:0 }}
+                                    </td>
+                                    {% endfor %}
+                                    {% if anios|length == 2 %}
+                                    <td class="text-end">
+                                        {% with var=comparativa|first %}
+                                        {% if var.1.crecimiento_utilidad_pct %}
+                                        <span class="badge {% if var.1.crecimiento_utilidad_pct > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ var.1.crecimiento_utilidad_pct|floatformat:1 }}%
+                                        </span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    {% endif %}
+                                </tr>
+
+                                <!-- Márgenes -->
+                                <tr class="table-light">
+                                    <td class="fw-bold">MÁRGENES</td>
+                                    {% for anio_data in anios %}
+                                    <td></td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Margen Bruto %</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">{{ anio_data.totales.margen_bruto_pct|floatformat:1 }}%</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Margen Operacional %</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">{{ anio_data.totales.margen_operacional_pct|floatformat:1 }}%</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Margen Neto %</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">
+                                        <span class="badge {% if anio_data.totales.margen_neto_pct < 10 %}bg-danger{% elif anio_data.totales.margen_neto_pct < 20 %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ anio_data.totales.margen_neto_pct|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+
+                                <!-- Promedios -->
+                                <tr class="table-light">
+                                    <td class="fw-bold">PROMEDIOS</td>
+                                    {% for anio_data in anios %}
+                                    <td></td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Ingreso Promedio Mensual</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">${{ anio_data.promedios.ingresos_mensual|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                                <tr>
+                                    <td class="ps-4">Ticket Promedio</td>
+                                    {% for anio_data in anios %}
+                                    <td class="text-end">${{ anio_data.promedios.ticket_promedio|floatformat:0 }}</td>
+                                    {% endfor %}
+                                    {% if anios|length > 1 %}<td></td>{% endif %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico Comparativo -->
+    {% if anios|length > 1 %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Evolución Año a Año</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartComparativo"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Botones -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary me-2">
+                        ← Volver al Dashboard
+                    </a>
+                    <button class="btn btn-success" onclick="window.print()">
+                        🖨️ Imprimir Comparativa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if anios|length > 1 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aniosData = {{ anios|safe }};
+    const labels = aniosData.map(a => a.anio.toString());
+    const ingresos = aniosData.map(a => parseFloat(a.totales.ingresos_neto));
+    const utilidades = aniosData.map(a => parseFloat(a.totales.utilidad_neta));
+    const margenes = aniosData.map(a => parseFloat(a.totales.margen_neto_pct));
+
+    new Chart(document.getElementById('chartComparativo'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ingresos Netos',
+                data: ingresos,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                yAxisID: 'y',
+            }, {
+                label: 'Utilidad Neta',
+                data: utilidades,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                yAxisID: 'y',
+            }, {
+                label: 'Margen Neto %',
+                data: margenes,
+                type: 'line',
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                yAxisID: 'y1',
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Pesos ($)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Margen %'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+
+<style>
+@media print {
+    .btn, form, canvas { display: none; }
+}
+</style>
+
+<script>
+// Manejar selección de años (máximo 5)
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="anios_sel"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const checked = document.querySelectorAll('input[name="anios_sel"]:checked');
+            if (checked.length > 5) {
+                this.checked = false;
+                alert('Máximo 5 años para comparar');
+            }
+        });
+    });
+    
+    // Convertir checkboxes a formato de query string
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const checked = Array.from(document.querySelectorAll('input[name="anios_sel"]:checked'));
+        const anios = checked.map(cb => cb.value).join(',');
+        if (anios) {
+            window.location.href = '?anios=' + anios;
+        }
+    });
+});
+</script>
+{% endblock %}

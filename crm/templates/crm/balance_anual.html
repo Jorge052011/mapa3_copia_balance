@@ -1,0 +1,299 @@
+{% extends "rutas/base.html" %}
+
+{% block title %}Balance Anual {{ anio }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>📊 Balance Anual {{ anio }}</h2>
+                <div>
+                    <a href="{% url 'crm:balance_mensual' %}" class="btn btn-outline-primary">
+                        Ver Balance Mensual
+                    </a>
+                    <a href="{% url 'crm:balance_comparativo' %}" class="btn btn-outline-info">
+                        Comparar Años
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Año -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="anio" class="form-label">Año</label>
+                            <select name="anio" id="anio" class="form-select">
+                                {% for a in anios %}
+                                <option value="{{ a }}" {% if a == anio_actual %}selected{% endif %}>{{ a }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Ver Año</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Anual -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Resumen Anual {{ anio }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Ingresos Totales</h6>
+                                <h3 class="mb-0">${{ totales.ingresos_bruto|floatformat:0 }}</h3>
+                                <small class="text-muted">Promedio mensual: ${{ promedios.ingresos_mensual|floatformat:0 }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Utilidad Neta</h6>
+                                <h3 class="mb-0 {% if totales.utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    ${{ totales.utilidad_neta|floatformat:0 }}
+                                </h3>
+                                <small class="text-muted">Margen: {{ totales.margen_neto_pct|floatformat:1 }}%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Total Vendido</h6>
+                                <h3 class="mb-0">{{ totales.kilos_vendidos|floatformat:0 }} kg</h3>
+                                <small class="text-muted">{{ totales.num_ventas }} ventas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Ticket Promedio</h6>
+                                <h3 class="mb-0">${{ promedios.ticket_promedio|floatformat:0 }}</h3>
+                                <small class="text-muted">{{ promedios.ventas_mensuales }} ventas/mes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Meses -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Evolución Mensual</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mes</th>
+                                    <th class="text-end">Ingresos</th>
+                                    <th class="text-end">CMV</th>
+                                    <th class="text-end">Util. Bruta</th>
+                                    <th class="text-end">Gastos</th>
+                                    <th class="text-end">Util. Neta</th>
+                                    <th class="text-end">Margen %</th>
+                                    <th class="text-end">Ventas</th>
+                                    <th class="text-end">Kilos</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mes in meses %}
+                                <tr>
+                                    <td class="fw-bold">{{ mes.periodo.mes_nombre }}</td>
+                                    <td class="text-end">${{ mes.ingresos.total_neto|floatformat:0 }}</td>
+                                    <td class="text-end text-danger">-${{ mes.costos.cmv|floatformat:0 }}</td>
+                                    <td class="text-end text-success">${{ mes.utilidad_bruta|floatformat:0 }}</td>
+                                    <td class="text-end text-danger">-${{ mes.gastos.total_neto|floatformat:0 }}</td>
+                                    <td class="text-end {% if mes.utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
+                                        ${{ mes.utilidad_neta|floatformat:0 }}
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge {% if mes.margen_neto_pct < 10 %}bg-danger{% elif mes.margen_neto_pct < 20 %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ mes.margen_neto_pct|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{ mes.ingresos.num_ventas }}</td>
+                                    <td class="text-end">{{ mes.ingresos.kilos_vendidos|floatformat:0 }}</td>
+                                    <td>
+                                        <a href="{% url 'crm:balance_mensual' %}?mes={{ mes.periodo.mes }}&anio={{ anio }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Ver →
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-secondary fw-bold">
+                                <tr>
+                                    <td>TOTAL {{ anio }}</td>
+                                    <td class="text-end">${{ totales.ingresos_neto|floatformat:0 }}</td>
+                                    <td class="text-end text-danger">-${{ totales.cmv|floatformat:0 }}</td>
+                                    <td class="text-end text-success">${{ totales.utilidad_bruta|floatformat:0 }}</td>
+                                    <td class="text-end text-danger">-${{ totales.gastos_neto|floatformat:0 }}</td>
+                                    <td class="text-end {% if totales.utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ${{ totales.utilidad_neta|floatformat:0 }}
+                                    </td>
+                                    <td class="text-end">{{ totales.margen_neto_pct|floatformat:1 }}%</td>
+                                    <td class="text-end">{{ totales.num_ventas }}</td>
+                                    <td class="text-end">{{ totales.kilos_vendidos|floatformat:0 }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Evolución de Ingresos y Utilidad</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartEvolucion"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Márgenes Mensuales</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMargenes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary me-2">
+                        ← Volver al Dashboard
+                    </a>
+                    <button class="btn btn-success" onclick="window.print()">
+                        🖨️ Imprimir Balance
+                    </button>
+                    <a href="{% url 'crm:api_balance_anual' anio_actual %}" 
+                       class="btn btn-info ms-2" target="_blank">
+                        📄 Exportar JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Datos de los meses
+    const meses = {{ meses|safe }};
+    const labels = meses.map(m => m.periodo.mes_nombre);
+    const ingresos = meses.map(m => parseFloat(m.ingresos.total_neto));
+    const utilidades = meses.map(m => parseFloat(m.utilidad_neta));
+    const margenBruto = meses.map(m => parseFloat(m.margen_bruto_pct));
+    const margenNeto = meses.map(m => parseFloat(m.margen_neto_pct));
+
+    // Gráfico de Evolución
+    new Chart(document.getElementById('chartEvolucion'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ingresos Netos',
+                data: ingresos,
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                yAxisID: 'y',
+            }, {
+                label: 'Utilidad Neta',
+                data: utilidades,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                yAxisID: 'y',
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Márgenes
+    new Chart(document.getElementById('chartMargenes'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Margen Bruto %',
+                data: margenBruto,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+            }, {
+                label: 'Margen Neto %',
+                data: margenNeto,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+@media print {
+    .btn, form, canvas { display: none; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends "rutas/base.html" %}
+
+{% block title %}Balance Mensual - {{ periodo.mes_nombre }} {{ periodo.anio }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>📊 Balance Mensual</h2>
+                <div>
+                    <a href="{% url 'crm:balance_anual' %}?anio={{ anio_actual }}" class="btn btn-outline-primary">
+                        Ver Balance Anual
+                    </a>
+                    <a href="{% url 'crm:balance_comparativo' %}" class="btn btn-outline-info">
+                        Comparar Años
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Período -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="mes" class="form-label">Mes</label>
+                            <select name="mes" id="mes" class="form-select">
+                                {% for m in meses %}
+                                <option value="{{ m.numero }}" {% if m.numero == mes_actual %}selected{% endif %}>
+                                    {{ m.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="anio" class="form-label">Año</label>
+                            <select name="anio" id="anio" class="form-select">
+                                {% for a in anios %}
+                                <option value="{{ a }}" {% if a == anio_actual %}selected{% endif %}>{{ a }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Ver Balance</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="text-muted">💰 Ingresos Totales</h6>
+                    <h3 class="mb-0">${{ ingresos.total_bruto|floatformat:0 }}</h3>
+                    <small class="text-muted">Neto: ${{ ingresos.total_neto|floatformat:0 }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="text-muted">📈 Utilidad Neta</h6>
+                    <h3 class="mb-0 {% if utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                        ${{ utilidad_neta|floatformat:0 }}
+                    </h3>
+                    <small class="text-muted">Margen: {{ margen_neto_pct|floatformat:1 }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="text-muted">📦 Kilos Vendidos</h6>
+                    <h3 class="mb-0">{{ ingresos.kilos_vendidos|floatformat:0 }} kg</h3>
+                    <small class="text-muted">{{ ingresos.num_ventas }} ventas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="text-muted">🎯 Ticket Promedio</h6>
+                    <h3 class="mb-0">${{ ingresos.ticket_promedio|floatformat:0 }}</h3>
+                    <small class="text-muted">Por venta</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado de Resultados -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Estado de Resultados - {{ periodo.mes_nombre }} {{ periodo.anio }}</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <tbody>
+                            <!-- Ingresos -->
+                            <tr class="table-light">
+                                <th colspan="2">INGRESOS</th>
+                                <th class="text-end"></th>
+                            </tr>
+                            <tr>
+                                <td width="50"></td>
+                                <td>Ventas Netas (sin IVA)</td>
+                                <td class="text-end"><strong>${{ ingresos.total_neto|floatformat:0 }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td class="text-muted small">IVA sobre ventas</td>
+                                <td class="text-end text-muted small">${{ ingresos.iva|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <!-- Costos -->
+                            <tr class="table-light">
+                                <th colspan="2">COSTO DE MERCADERÍA VENDIDA</th>
+                                <th class="text-end"></th>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>Costo Promedio: ${{ costos.costo_promedio_kg|floatformat:0 }}/kg × {{ costos.kilos_vendidos|floatformat:0 }} kg</td>
+                                <td class="text-end text-danger">-${{ costos.cmv|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <!-- Utilidad Bruta -->
+                            <tr class="table-success fw-bold">
+                                <td></td>
+                                <td>UTILIDAD BRUTA</td>
+                                <td class="text-end">${{ utilidad_bruta|floatformat:0 }} ({{ margen_bruto_pct|floatformat:1 }}%)</td>
+                            </tr>
+                            
+                            <!-- Gastos Operacionales -->
+                            <tr class="table-light">
+                                <th colspan="2">GASTOS OPERACIONALES</th>
+                                <th class="text-end"></th>
+                            </tr>
+                            {% for tipo, datos in gastos.por_tipo.items %}
+                            {% if datos.neto > 0 %}
+                            <tr>
+                                <td></td>
+                                <td>{{ tipo }} <span class="badge bg-secondary">{{ datos.cantidad }}</span></td>
+                                <td class="text-end text-danger">-${{ datos.total|floatformat:0 }}</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            <tr class="fw-bold">
+                                <td></td>
+                                <td>Total Gastos (sin IVA)</td>
+                                <td class="text-end text-danger">-${{ gastos.total_neto|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <!-- Utilidad Operacional -->
+                            <tr class="table-info fw-bold">
+                                <td></td>
+                                <td>UTILIDAD OPERACIONAL</td>
+                                <td class="text-end">${{ utilidad_operacional|floatformat:0 }} ({{ margen_operacional_pct|floatformat:1 }}%)</td>
+                            </tr>
+                            
+                            <!-- IVA Gastos -->
+                            <tr>
+                                <td></td>
+                                <td class="text-muted">IVA sobre gastos</td>
+                                <td class="text-end text-danger text-muted">-${{ gastos.total_iva|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <!-- Utilidad Neta -->
+                            <tr class="table-primary fw-bold fs-5">
+                                <td></td>
+                                <td>UTILIDAD NETA</td>
+                                <td class="text-end {% if utilidad_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    ${{ utilidad_neta|floatformat:0 }} ({{ margen_neto_pct|floatformat:1 }}%)
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos y Detalles -->
+        <div class="col-md-4">
+            <!-- Distribución de Ventas por Canal -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Ventas por Canal</h6>
+                </div>
+                <div class="card-body">
+                    {% for canal, monto in ingresos.por_canal.items %}
+                    {% if monto > 0 %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">{{ canal }}</span>
+                            <span class="badge bg-primary">${{ monto|floatformat:0 }}</span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ monto|floatformat:0|add:0 }}00%"
+                                 aria-valuenow="{{ monto }}" aria-valuemin="0" aria-valuemax="{{ ingresos.total_bruto }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Márgenes -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Análisis de Márgenes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Margen Bruto</small>
+                            <small class="fw-bold">{{ margen_bruto_pct|floatformat:1 }}%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ margen_bruto_pct }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Margen Operacional</small>
+                            <small class="fw-bold">{{ margen_operacional_pct|floatformat:1 }}%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: {{ margen_operacional_pct }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Margen Neto</small>
+                            <small class="fw-bold">{{ margen_neto_pct|floatformat:1 }}%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" style="width: {{ margen_neto_pct }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <a href="{% url 'crm:dashboard' %}" class="btn btn-secondary me-2">
+                        ← Volver al Dashboard
+                    </a>
+                    <button class="btn btn-success" onclick="window.print()">
+                        🖨️ Imprimir Balance
+                    </button>
+                    <a href="{% url 'crm:api_balance_mensual' anio_actual mes_actual %}" 
+                       class="btn btn-info ms-2" target="_blank">
+                        📄 Exportar JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, form, .card-header { display: none; }
+    .card { border: 1px solid #ddd !important; }
+}
+</style>
+{% endblock %}
